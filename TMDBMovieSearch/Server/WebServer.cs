@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using TMDBMovieSearch.Services;
 
 namespace TMDBMovieSearch.Server
 {
@@ -12,11 +14,19 @@ namespace TMDBMovieSearch.Server
         private readonly HttpListener _listener;
         private readonly string _prefix;
 
+        //nakon tmdbservice
+        private readonly TmdbService _tmdbService;
+
         public WebServer(string prefix)
         {
             _prefix = prefix;
             _listener = new HttpListener();
             _listener.Prefixes.Add(prefix);
+            _tmdbService = new TmdbService(
+                baseUrl: "http://api.themoviedb.org/3/search/movie",
+                apiKey: Environment.GetEnvironmentVariable("API_KEY") ?? throw new InvalidOperationException("TMDB_API_KEY not set"),
+                client: new HttpClient()
+            );
         }
 
         public void Start()
@@ -25,17 +35,26 @@ namespace TMDBMovieSearch.Server
             Console.WriteLine($"Server slusa na {_prefix}");
 
             // petlja za osluskivanje
-            while (true)
+            Task.Run(() =>
             {
-                HttpListenerContext context = _listener.GetContext();
-
-                HttpListenerContext capturedContext = context; //captured-variable
-
-                ThreadPool.QueueUserWorkItem(state =>
+                while (_listener.IsListening)
                 {
-                    HandleRequest(capturedContext);
-                });
-            }
+                    HttpListenerContext context = _listener.GetContext();
+
+                    HttpListenerContext capturedContext = context; //captured-variable
+
+                    ThreadPool.QueueUserWorkItem(state =>
+                    {
+                        HandleRequest(capturedContext);
+                    });
+                }
+            });
+            
+
+            Console.WriteLine("Press ENTER to stop the server...");
+            Console.ReadLine();
+
+            Stop();
         }
 
         public void Stop()
@@ -56,8 +75,15 @@ namespace TMDBMovieSearch.Server
                 return;
             }
 
-            //placeholder za sad -posle ide TMDBService poziv
-            SendResponse(context, 200, $"Primljen zahtev za: {query}");
+            try
+            {
+                JObject result = _tmdbService.Search(query);
+                SendResponse(context, 200, result.ToString());
+            }
+            catch(Exception e)
+            {
+                SendResponse(context, 500, $"Error while calling TMDB API: {e.Message}");
+            }
         }
 
         private void SendResponse(HttpListenerContext context, int statusCode, string message)

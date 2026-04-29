@@ -1,4 +1,14 @@
 ﻿using TMDBMovieSearch.Server;
+using DotNetEnv;
 
-var server = new WebServer("http://localhost:5000/");
-server.Start();
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Env.Load();
+
+        var server = new WebServer("http://localhost:5000/");
+        server.Start();
+    }
+}
