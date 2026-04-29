@@ -42,7 +42,7 @@ namespace TMDBMovieSearch.Services
                 else
                 {
                     stopwatch.Stop();
-                    Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.ElapsedMilliseconds}ms ");
+                    Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s");
                     return entry.Value;
                 }
                    
@@ -62,7 +62,7 @@ namespace TMDBMovieSearch.Services
                     else
                     {
                         stopwatch.Stop();
-                        Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.ElapsedMilliseconds}ms ");
+                        Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s ");
                         return entryInner.Value;
                     }
                 }
@@ -76,7 +76,7 @@ namespace TMDBMovieSearch.Services
                     _cache[cacheKey] = new CacheEntry(result, _cacheTtl);
 
                     stopwatch.Stop();
-                    Console.WriteLine($"[CACHED]\t\t'{query}' -> {stopwatch.ElapsedMilliseconds}ms");
+                    Console.WriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
                     return result;
                 }
                 catch(Exception e)

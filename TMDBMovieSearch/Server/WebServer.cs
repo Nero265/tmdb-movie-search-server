@@ -65,6 +65,14 @@ namespace TMDBMovieSearch.Server
 
         private void HandleRequest(HttpListenerContext context)
         {
+            // Ignorisemo favicon.ico zahteve
+            if (context.Request.Url!.AbsolutePath == "/favicon.ico")
+            {
+                context.Response.StatusCode = 404;
+                context.Response.Close();
+                return;
+            }
+
             Console.WriteLine($"[REQUEST] {context.Request.HttpMethod} {context.Request.Url}");
 
             string? query = context.Request.QueryString["query"]; //citamo query parametar
