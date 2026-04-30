@@ -25,7 +25,7 @@ http://localhost:5000/search?query=Avatar
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/Nero265Hej/tmdb-movie-search-server.git
+git clone https://github.com/Nero265/tmdb-movie-search-server.git
 cd tmdb-movie-search-server
 ```
 
