@@ -13,7 +13,7 @@ A server application that:
 
 ## Example Request
 
-http://localhost:8080/search?query=Avatar
+http://localhost:5000/search?query=Avatar
 
 
 ## Requirements
