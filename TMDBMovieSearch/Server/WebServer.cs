@@ -17,14 +17,14 @@ namespace TMDBMovieSearch.Server
         //nakon tmdbservice
         private readonly TmdbService _tmdbService;
 
-        public WebServer(string prefix)
+        public WebServer(string prefix, string apiKey)
         {
             _prefix = prefix;
             _listener = new HttpListener();
             _listener.Prefixes.Add(prefix);
             _tmdbService = new TmdbService(
-                baseUrl: "http://api.themoviedb.org/3/search/movie",
-                apiKey: Environment.GetEnvironmentVariable("API_KEY") ?? throw new InvalidOperationException("TMDB_API_KEY not set"),
+                baseUrl: "https://api.themoviedb.org/3/search/movie",
+                apiKey: apiKey,
                 client: new HttpClient()
             );
         }
