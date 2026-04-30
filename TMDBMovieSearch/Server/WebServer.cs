@@ -76,6 +76,14 @@ namespace TMDBMovieSearch.Server
             Console.WriteLine($"[REQUEST] {context.Request.HttpMethod} {context.Request.Url}");
 
             string? query = context.Request.QueryString["query"]; //citamo query parametar
+            var extraParams = new Dictionary<string, string>(); //moguci filteri
+            foreach(string? key in context.Request.QueryString.AllKeys)
+            {
+                if (key != null && key != "query")
+                {
+                    extraParams[key] = context.Request.QueryString[key]!;
+                }
+            }
             
             if (string.IsNullOrEmpty(query))
             {
@@ -85,8 +93,18 @@ namespace TMDBMovieSearch.Server
 
             try
             {
-                JObject result = _tmdbService.Search(query);
-                SendResponse(context, 200, result.ToString());
+                JObject result = _tmdbService.Search(query, extraParams);
+                JArray movies = (JArray)result["results"]!;
+                _tmdbService.PrintCacheStats();
+                if (movies.Count == 0)
+                {
+                    SendResponse(context, 404, "Nisu pronadjeni filmovi za dati upit");
+                }
+                else
+                {
+                    SendResponse(context, 200, result.ToString());
+                }
+                
             }
             catch(Exception e)
             {

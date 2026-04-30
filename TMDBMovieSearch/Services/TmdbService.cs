@@ -27,9 +27,9 @@ namespace TMDBMovieSearch.Services
             _client = client;
         }
 
-        public JObject Search(string query)
+        public JObject Search(string query, Dictionary<string, string>? extraParams = null)
         {
-            string cacheKey = GenerateCacheKey(query);
+            string cacheKey = GenerateCacheKey(query, extraParams);
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             if (_cache.TryGetValue(cacheKey, out CacheEntry? entry ))
@@ -68,15 +68,25 @@ namespace TMDBMovieSearch.Services
                 }
 
                 //sigurno nema
-                Console.WriteLine($"[CACHE MISS] '{query} -> pozivam TMDB API...");
+                Console.WriteLine($"[CACHE MISS] '{query}' -> pozivam TMDB API...");
 
                 try
                 {
-                    JObject result = CallApi(query);
-                    _cache[cacheKey] = new CacheEntry(result, _cacheTtl);
+                    JObject result = CallApi(query, extraParams);
+                    //ne kesiramo ako nema rezultata
+                    JArray? movies = result["results"] as JArray;
+                    if (movies != null && movies.Count > 0)
+                    {
+                        _cache[cacheKey] = new CacheEntry(result, _cacheTtl);
+                        stopwatch.Stop();
+                        Console.WriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
+                    }
+                    else
+                    {
+                        stopwatch.Stop();
+                        Console.WriteLine($"[NOT CACHED] '{query}' -> nema rezultata");
+                    }
 
-                    stopwatch.Stop();
-                    Console.WriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
                     return result;
                 }
                 catch(Exception e)
@@ -88,12 +98,18 @@ namespace TMDBMovieSearch.Services
             }
         }
 
-        private string GenerateCacheKey(string query)
+        private string GenerateCacheKey(string query, Dictionary<string, string>? extraParams = null)
         {
             var allParams = new Dictionary<string, string>
             {
                 { "query", query.Trim().ToLowerInvariant() }
             };
+
+            if (extraParams != null)
+            {
+                foreach (var kvp in extraParams)
+                    allParams[kvp.Key.ToLowerInvariant()] = kvp.Value.ToLowerInvariant();
+            }
 
 
             //redosled parametra -radi
@@ -101,9 +117,13 @@ namespace TMDBMovieSearch.Services
             return string.Join("&", sorted.Select(p => $"{p.Key}={p.Value}"));
         }
 
-        private JObject CallApi(string query)
+        private JObject CallApi(string query, Dictionary<string, string>? extraParams = null)
         {
             string url = $"{_baseUrl}?query={Uri.EscapeDataString(query)}&api_key={_apiKey}";
+
+            if (extraParams != null)
+                foreach (var kvp in extraParams)
+                    url += $"&{kvp.Key}={Uri.EscapeDataString(kvp.Value)}";
 
             HttpResponseMessage response = _client.GetAsync(url).Result;
             response.EnsureSuccessStatusCode();
