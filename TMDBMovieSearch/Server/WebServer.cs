@@ -97,7 +97,7 @@ namespace TMDBMovieSearch.Server
             {
                 JObject result = _tmdbService.Search(query, extraParams);
                 JArray movies = (JArray)result["results"]!;
-                _tmdbService.PrintCacheStats();
+                //_tmdbService.PrintCacheStats();
                 if (movies.Count == 0)
                 {
                     SendResponse(context, 404, "Nisu pronadjeni filmovi za dati upit");

@@ -42,20 +42,11 @@ namespace TMDBMovieSearch.Services
             string cacheKey = GenerateCacheKey(query, extraParams);
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            if (_cache.TryGetValue(cacheKey, out CacheEntry? entry ))
+            if (_cache.TryGetValue(cacheKey, out CacheEntry? entry ) && !entry.IsExpired)
             {
-                if (entry.IsExpired)
-                {
-                    _cache.Remove(cacheKey);
-                    SafeWriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
-                }
-                else
-                {
-                    stopwatch.Stop();
-                    SafeWriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s");
-                    return entry.Value;
-                }
-                   
+                stopwatch.Stop();
+                SafeWriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s");
+                return entry.Value;
             }
 
             //nije u kesu
@@ -67,6 +58,7 @@ namespace TMDBMovieSearch.Services
                     {
                         _cache.Remove(cacheKey);
                         SafeWriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
+                        PrintCacheStatsInternal();
                     }
 
                     else
@@ -90,6 +82,7 @@ namespace TMDBMovieSearch.Services
                         _cache[cacheKey] = new CacheEntry(result, _cacheTtl);
                         stopwatch.Stop();
                        SafeWriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
+                        PrintCacheStatsInternal();
                     }
                     else
                     {
@@ -142,6 +135,38 @@ namespace TMDBMovieSearch.Services
             return JObject.Parse(body);
         }
 
+        private void PrintCacheStatsInternal()
+        {
+            var expiredKeys = _cache
+                        .Where(p => p.Value.IsExpired)
+                        .Select(p => p.Key)
+                        .ToList();
+
+            foreach (var key in expiredKeys)
+                _cache.Remove(key);
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("\n======== Cache stanje ========");
+            sb.AppendLine($"\t Unosa u kesu: {_cache.Count}");
+            sb.AppendLine($"\t TTL: {_cacheTtl.TotalMinutes} minuta");
+            sb.AppendLine("\t Unosi:");
+
+            foreach (var p in _cache)
+            {
+                string status = p.Value.IsExpired ?
+                    "ISTEKAO" : $"istice za {(p.Value.ExpiresAt - DateTime.UtcNow).TotalSeconds:F0}s";
+
+                sb.AppendLine($"\t\t [{status}] '{p.Key}'");
+            }
+
+            sb.AppendLine("==============================\n");
+
+            lock (_consoleLock)
+            {
+                Console.Write(sb.ToString());
+            }
+        }
+
         public void PrintCacheStats()
         {
             lock(_cacheLock)
@@ -155,20 +180,26 @@ namespace TMDBMovieSearch.Services
                 foreach (var key in expiredKeys)
                     _cache.Remove(key);
 
-                Console.WriteLine("\n======== Cache stanje ========");
-                Console.WriteLine($"\t Unosa u kesu: {_cache.Count}");
-                Console.WriteLine($"\t TTL: {_cacheTtl.TotalMinutes} minuta");
-                Console.WriteLine("\t Unosi:");
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("\n======== Cache stanje ========");
+                sb.AppendLine($"\t Unosa u kesu: {_cache.Count}");
+                sb.AppendLine($"\t TTL: {_cacheTtl.TotalMinutes} minuta");
+                sb.AppendLine("\t Unosi:");
 
                 foreach (var p in _cache)
                 {
                     string status = p.Value.IsExpired ?
                         "ISTEKAO" : $"istice za {(p.Value.ExpiresAt - DateTime.UtcNow).TotalSeconds:F0}s";
 
-                    Console.WriteLine($"\t\t [{status}] '{p.Key}'");
+                    sb.AppendLine($"\t\t [{status}] '{p.Key}'");
                 }
 
-                Console.WriteLine("==============================\n");
+                sb.AppendLine("==============================\n");
+
+                lock(_consoleLock)
+                {
+                    Console.Write(sb.ToString());
+                }
             }
         }
 
