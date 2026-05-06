@@ -20,6 +20,16 @@ namespace TMDBMovieSearch.Services
         private readonly object _cacheLock = new object();
         private readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(5);
 
+        private static readonly object _consoleLock = new object();
+
+        private void SafeWriteLine(string message)
+        {
+            lock(_consoleLock)
+            {
+                Console.WriteLine(message);
+            }
+        }
+
         public TmdbService(string baseUrl, string apiKey, HttpClient client)
         {
             _baseUrl = baseUrl;
@@ -37,12 +47,12 @@ namespace TMDBMovieSearch.Services
                 if (entry.IsExpired)
                 {
                     _cache.Remove(cacheKey);
-                    Console.WriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
+                    SafeWriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
                 }
                 else
                 {
                     stopwatch.Stop();
-                    Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s");
+                    SafeWriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s");
                     return entry.Value;
                 }
                    
@@ -56,19 +66,19 @@ namespace TMDBMovieSearch.Services
                     if (entryInner.IsExpired)
                     {
                         _cache.Remove(cacheKey);
-                        Console.WriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
+                        SafeWriteLine($"[CACHE EXPIRED] '{query}' -> uklonjen iz kesa");
                     }
 
                     else
                     {
                         stopwatch.Stop();
-                        Console.WriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s ");
+                        SafeWriteLine($"[CACHE HIT] '{query}' -> {stopwatch.Elapsed}s ");
                         return entryInner.Value;
                     }
                 }
 
                 //sigurno nema
-                Console.WriteLine($"[CACHE MISS] '{query}' -> pozivam TMDB API...");
+                SafeWriteLine($"[CACHE MISS] '{query}' -> pozivam TMDB API...");
 
                 try
                 {
@@ -79,12 +89,12 @@ namespace TMDBMovieSearch.Services
                     {
                         _cache[cacheKey] = new CacheEntry(result, _cacheTtl);
                         stopwatch.Stop();
-                        Console.WriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
+                       SafeWriteLine($"[CACHED] '{query}' -> {stopwatch.Elapsed}s");
                     }
                     else
                     {
                         stopwatch.Stop();
-                        Console.WriteLine($"[NOT CACHED] '{query}' -> nema rezultata");
+                        SafeWriteLine($"[NOT CACHED] '{query}' -> nema rezultata");
                     }
 
                     return result;
@@ -92,7 +102,7 @@ namespace TMDBMovieSearch.Services
                 catch(Exception e)
                 {
                     stopwatch.Stop();
-                    Console.WriteLine($"[ERROR]\t\t'{query}' -> {e.Message}");
+                    SafeWriteLine($"[ERROR]\t\t'{query}' -> {e.Message}");
                     throw;
                 }
             }
