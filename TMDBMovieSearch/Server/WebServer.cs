@@ -34,8 +34,8 @@ namespace TMDBMovieSearch.Server
             _listener.Start();
             Console.WriteLine($"Server slusa na {_prefix}");
 
-            // petlja za osluskivanje
-            Task.Run(() =>
+            // petlja za osluskivanje 
+            Thread listenerThread = new Thread(() =>
             {
                 while (_listener.IsListening)
                 {
@@ -49,7 +49,9 @@ namespace TMDBMovieSearch.Server
                     });
                 }
             });
-            
+
+            listenerThread.IsBackground = true; ;
+            listenerThread.Start();
 
             Console.WriteLine("Press ENTER to stop the server...");
             Console.ReadLine();
