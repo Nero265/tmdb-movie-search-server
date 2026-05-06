@@ -55,7 +55,7 @@ Server will start on http://localhost:5000
 - Error handling: invalid queries, API failures
 
 ## Stress Testing
-A Python script (stress_python.py) is included to simulate multiple concurrent requests:
+A Python script (stress_test.py) is included to simulate multiple concurrent requests:
 ```bash
 python stress_test.py
 ```
