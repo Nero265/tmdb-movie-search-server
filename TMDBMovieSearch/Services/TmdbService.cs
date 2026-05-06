@@ -146,6 +146,15 @@ namespace TMDBMovieSearch.Services
         {
             lock(_cacheLock)
             {
+
+                var expiredKeys = _cache
+                        .Where(p => p.Value.IsExpired)
+                        .Select(p => p.Key)
+                        .ToList();
+
+                foreach (var key in expiredKeys)
+                    _cache.Remove(key);
+
                 Console.WriteLine("\n======== Cache stanje ========");
                 Console.WriteLine($"\t Unosa u kesu: {_cache.Count}");
                 Console.WriteLine($"\t TTL: {_cacheTtl.TotalMinutes} minuta");
