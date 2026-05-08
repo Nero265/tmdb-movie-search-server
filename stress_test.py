@@ -32,7 +32,7 @@ def send_request(query):
         print(f"[OK]\t '{query}' -> {elapsed:.3f}s (status: {response.status})")
 
     except Exception as e:
-        with result_lock:
+        with results_lock:
             results["error"] +=1
         print(f"[ERROR]\t '{query}' -> {e}")
 
